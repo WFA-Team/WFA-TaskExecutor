@@ -1,0 +1,20 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+  	<groupId>com.wfa</groupId>
+  	<artifactId>wfa-parent</artifactId>
+  	<version>0.0.1-SNAPSHOT</version>
+  </parent>
+  <groupId>com.wfa</groupId>
+  <artifactId>task-executor</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>TaskExecutor</name>
+  <description>Middleware that executes tasks, sequentially or parallely as needed</description>
+  <dependencies>
+  	<dependency>
+  		<groupId>com.wfa</groupId>
+  		<artifactId>general-utils</artifactId>
+  		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+  </dependencies>
+</project>
