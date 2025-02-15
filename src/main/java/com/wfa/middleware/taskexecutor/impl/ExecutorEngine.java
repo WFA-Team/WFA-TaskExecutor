@@ -7,26 +7,18 @@ import com.wfa.middleware.utils.PlayType;
 import com.wfa.middleware.utils.beans.api.IThreadPool;
 import com.wfa.middleware.utils.beans.api.IThreadPoolFactory;
 
-
-import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.Comparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-/*
- * Bridge between Executable concept and Java Runnable
- * 
- * TODO-> Do we really need the taskCollection that we have in this?
+/* Bridge between Executable concept and Java Runnable
  * author -> tortoiseDev
  */
 @Component
 public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T> {
 	private static final int DEFAULT_PARALLELISM = 32;
 	private static final int DEFAULT_EXECUTABLE_CAPACITY = 17;
-	
-	// Thread safe queue
-	private Queue<IExecutable> execQueue;
 	private int allowedTotalParallelism;
 	private volatile PlayType engineState;
 	private IThreadPool<IPrioritizedRunnable> threadPool;
@@ -35,19 +27,7 @@ public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T>
 	public ExecutorEngine(IThreadPoolFactory<IPrioritizedRunnable> threadPoolFactory) {
 		this.allowedTotalParallelism = DEFAULT_PARALLELISM;
 		this.engineState = PlayType.NOT_STARTED;
-		configureExecutableQueue();	
 		configureThreadPool(threadPoolFactory);
-	}
-	
-	private void configureExecutableQueue() {
-		this.execQueue = new PriorityBlockingQueue<IExecutable>(DEFAULT_EXECUTABLE_CAPACITY,
-			new Comparator<IExecutable>() {
-	
-				@Override
-				public int compare(IExecutable e1, IExecutable e2) {						
-					return e1.getPriorityWeight() - e1.getPriorityWeight();
-				}		
-		});
 	}
 	
 	private void configureThreadPool(IThreadPoolFactory<IPrioritizedRunnable> threadPoolFactory) {
@@ -76,7 +56,6 @@ public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T>
 
 	@Override
 	public void schedule(T executable) {
-		this.execQueue.add(executable);
 		IPrioritizedRunnable runnable = new IPrioritizedRunnable() {
 			private int priorityWeight = 0;
 			
