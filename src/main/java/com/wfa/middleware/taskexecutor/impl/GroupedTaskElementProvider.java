@@ -44,6 +44,7 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			private int priorityWeight = 0;
 			private AsyncPromise<JoinVoid> replyPromise;
 			private IJoinedJoinable<AsyncPromise<JoinVoid>> combinedSubTaskPromise;
+			private JoinVoid executionResult;
 			
 			@Override
 			public ITaskElement next() {
@@ -81,16 +82,18 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 				return new IAsyncCallback<JoinVoid>() {
 					@Override
 					public void onSuccess(JoinVoid result) {
+						executionResult = result;
 						if (replyPromise != null) {
-							replyPromise.succeed(JoinVoid.JoinVoidInstance);
+							replyPromise.succeed(executionResult);
 							engine.schedule(nextTask);
 						}
 					}
 					
 					@Override
 					public void onFailure(JoinVoid result) {
+						executionResult = result;
 						if (replyPromise != null) {
-							replyPromise.fail(JoinVoid.JoinVoidInstance);
+							replyPromise.fail(executionResult);
 						}
 						// TODO-> Does it make sense here to schedule next task?
 					}					
@@ -103,10 +106,10 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 				
 				if (combinedSubTaskPromise.get().isDone()) {
 					if (combinedSubTaskPromise.get().hasSucceeded()) {
-						replyPromise.succeed(JoinVoid.JoinVoidInstance);
+						replyPromise.succeed(executionResult);
 						engine.schedule(nextTask);
 					} else {
-						replyPromise.fail(JoinVoid.JoinVoidInstance);
+						replyPromise.fail(executionResult);
 					}
 				}
 			}
