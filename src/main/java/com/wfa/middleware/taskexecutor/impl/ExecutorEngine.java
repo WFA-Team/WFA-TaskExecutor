@@ -3,6 +3,8 @@ package com.wfa.middleware.taskexecutor.impl;
 import com.wfa.middleware.taskexecutor.api.IExecutable;
 import com.wfa.middleware.taskexecutor.api.IExecutorEngine;
 import com.wfa.middleware.taskexecutor.api.IPrioritizedRunnable;
+import com.wfa.middleware.utils.AsyncJoinablePromise;
+import com.wfa.middleware.utils.JoinVoid;
 import com.wfa.middleware.utils.PlayType;
 import com.wfa.middleware.utils.beans.api.IThreadPool;
 import com.wfa.middleware.utils.beans.api.IThreadPoolFactory;
@@ -55,7 +57,8 @@ public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T>
 	}
 
 	@Override
-	public void schedule(T executable) {
+	public AsyncJoinablePromise<JoinVoid> schedule(T executable) {
+		AsyncJoinablePromise<JoinVoid> promise = AsyncJoinablePromise.getNewJoinablePromise();
 		IPrioritizedRunnable runnable = new IPrioritizedRunnable() {
 			private int priorityWeight = 0;
 			
@@ -63,7 +66,7 @@ public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T>
 			public void run() {
 				executable.preexecution();
 				executable.execute();
-				executable.postexecution();
+				executable.postexecution(promise);
 			}
 
 			@Override
@@ -87,6 +90,8 @@ public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T>
 		// Configured this runnable translation of the executable
 		// in PriorityQueue of ThreadPool
 		this.threadPool.getRunnableQueue().add(runnable);
+		
+		return promise;
 	}
 
 	@Override
