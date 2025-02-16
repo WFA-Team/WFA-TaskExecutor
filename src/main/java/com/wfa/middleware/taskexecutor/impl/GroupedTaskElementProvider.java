@@ -33,7 +33,7 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 
 	@Override
 	public IGroupedTaskElement getGroupedTaskElement(List<ITaskElement> parallelTasks) {
-		return this.getGroupedTaskElement(null, null);
+		return this.getGroupedTaskElement(parallelTasks, null);
 	}
 
 	@Override
