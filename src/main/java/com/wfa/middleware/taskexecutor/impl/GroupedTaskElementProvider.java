@@ -1,6 +1,7 @@
 package com.wfa.middleware.taskexecutor.impl;
 
 import java.util.List;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import com.wfa.middleware.utils.JoinVoid;
 import com.wfa.middleware.utils.api.IAsyncCallback;
 import com.wfa.middleware.utils.api.IJoinable;
 import com.wfa.middleware.utils.api.IJoinedJoinable;
+import java.util.Comparator;
 
 @Component
 public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
@@ -38,9 +40,17 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 
 	@Override
 	public IGroupedTaskElement getGroupedTaskElement(List<ITaskElement> parallelTasks, ITaskElement nextTask) {
-		return new IGroupedTaskElement() {
+		IGroupedTaskElement groupedTask =  new IGroupedTaskElement() {
 			private ITaskElement childTask = nextTask;
-			private List<ITaskElement> parallelyExecutableTasks = parallelTasks;
+			private PriorityBlockingQueue<ITaskElement> parallelyExecutableTasks = new PriorityBlockingQueue<ITaskElement>(parallelTasks.size(),
+					new Comparator<ITaskElement>() {
+
+						@Override
+						public int compare(ITaskElement e1, ITaskElement e2) {
+							return e1.getPriorityWeight() - e2.getPriorityWeight();
+						}
+				
+			});
 			private int priorityWeight = 0;
 			private AsyncPromise<JoinVoid> replyPromise;
 			private IJoinedJoinable<AsyncPromise<JoinVoid>> combinedSubTaskPromise;
@@ -64,7 +74,9 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			@Override
 			public void execute() {
 				IJoinable<AsyncPromise<JoinVoid>> firstSubTaskPromise = null;
-				for (ITaskElement subTask : parallelyExecutableTasks) {
+				
+				while(parallelyExecutableTasks.peek() != null) {
+					ITaskElement subTask = parallelyExecutableTasks.poll();
 					if (firstSubTaskPromise == null) {
 						firstSubTaskPromise = engine.schedule(subTask);
 					} else if (combinedSubTaskPromise == null){
@@ -136,6 +148,12 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 				this.parallelyExecutableTasks.add(subTask);
 			}
 		};
+		
+		for (ITaskElement subTask : parallelTasks) {
+			groupedTask.addParallelTask(subTask);
+		}
+		
+		return groupedTask;
 	}
 
 }
