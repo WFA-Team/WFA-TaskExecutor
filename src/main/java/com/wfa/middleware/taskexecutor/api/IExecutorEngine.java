@@ -1,7 +1,8 @@
 package com.wfa.middleware.taskexecutor.api;
 
-import com.wfa.middleware.utils.AsyncJoinablePromise;
+import com.wfa.middleware.utils.AsyncPromise;
 import com.wfa.middleware.utils.JoinVoid;
+import com.wfa.middleware.utils.api.IJoinable;
 
 /**
  * Executor engine, will handle scheduling of independent executions, 
@@ -11,7 +12,7 @@ import com.wfa.middleware.utils.JoinVoid;
  */
 public interface IExecutorEngine <T extends IExecutable> {
 	void setMaxParallelism(int parallelism) throws IllegalStateException; // call only when engine is stopped	
-	AsyncJoinablePromise<JoinVoid> schedule(T executable);
+	IJoinable<AsyncPromise<JoinVoid>> schedule(T executable);
 	void startEngine() throws IllegalStateException;
 	void stopEngine() throws IllegalStateException;
 	void pauseEngine() throws IllegalStateException;

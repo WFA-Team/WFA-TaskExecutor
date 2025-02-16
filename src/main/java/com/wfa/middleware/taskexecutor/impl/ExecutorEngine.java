@@ -4,8 +4,10 @@ import com.wfa.middleware.taskexecutor.api.IExecutable;
 import com.wfa.middleware.taskexecutor.api.IExecutorEngine;
 import com.wfa.middleware.taskexecutor.api.IPrioritizedRunnable;
 import com.wfa.middleware.utils.AsyncJoinablePromise;
+import com.wfa.middleware.utils.AsyncPromise;
 import com.wfa.middleware.utils.JoinVoid;
 import com.wfa.middleware.utils.PlayType;
+import com.wfa.middleware.utils.api.IJoinable;
 import com.wfa.middleware.utils.beans.api.IThreadPool;
 import com.wfa.middleware.utils.beans.api.IThreadPoolFactory;
 
@@ -57,7 +59,7 @@ public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T>
 	}
 
 	@Override
-	public AsyncJoinablePromise<JoinVoid> schedule(T executable) {
+	public IJoinable<AsyncPromise<JoinVoid>> schedule(T executable) {
 		AsyncJoinablePromise<JoinVoid> promise = AsyncJoinablePromise.getNewJoinablePromise();
 		IPrioritizedRunnable runnable = new IPrioritizedRunnable() {
 			private int priorityWeight = 0;
