@@ -2,6 +2,7 @@ package com.wfa.middleware.taskexecutor.impl;
 
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -56,6 +57,7 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			private AsyncPromise<JoinVoid> replyPromise;
 			private IJoinedJoinable<AsyncPromise<JoinVoid>> combinedSubTaskPromise;
 			private JoinVoid executionResult;
+			private AtomicBoolean concluded = new AtomicBoolean(false);
 			
 			@Override
 			public ITaskElement next() {
@@ -96,7 +98,8 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 					@Override
 					public void onSuccess(JoinVoid result) {
 						executionResult = result;
-						if (replyPromise != null) {
+						if (replyPromise != null
+								&& concluded.compareAndSet(false, true)) {
 							if (nextTask != null)
 								engine.schedule(nextTask, replyPromise);
 							else
@@ -107,7 +110,8 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 					@Override
 					public void onFailure(JoinVoid result) {
 						executionResult = result;
-						if (replyPromise != null) {
+						if (replyPromise != null
+								&& concluded.compareAndSet(false, true)) {
 							replyPromise.fail(executionResult);
 						}
 					}					
@@ -118,7 +122,8 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			public synchronized void postexecute(AsyncPromise<JoinVoid> promise) {
 				replyPromise = promise;
 				
-				if (combinedSubTaskPromise.get().isDone()) {
+				if (combinedSubTaskPromise.get().isDone() 
+						&& concluded.compareAndSet(false, true)) {
 					if (combinedSubTaskPromise.get().hasSucceeded()) {
 						if (nextTask != null)
 							engine.schedule(nextTask, replyPromise);
