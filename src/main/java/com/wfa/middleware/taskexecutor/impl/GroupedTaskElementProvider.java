@@ -42,7 +42,8 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 	public IGroupedTaskElement getGroupedTaskElement(List<ITaskElement> parallelTasks, ITaskElement nextTask) {
 		IGroupedTaskElement groupedTask =  new IGroupedTaskElement() {
 			private ITaskElement childTask = nextTask;
-			private PriorityBlockingQueue<ITaskElement> parallelyExecutableTasks = new PriorityBlockingQueue<ITaskElement>(parallelTasks.size(),
+			private PriorityBlockingQueue<ITaskElement> parallelyExecutableTasks = new PriorityBlockingQueue<ITaskElement>(
+					parallelTasks != null ? parallelTasks.size() : 0,
 					new Comparator<ITaskElement>() {
 
 						@Override
@@ -67,7 +68,7 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			}
 
 			@Override
-			public void preexecution() {
+			public void preexecute() {
 				// do nothing
 			}
 
@@ -96,8 +97,10 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 					public void onSuccess(JoinVoid result) {
 						executionResult = result;
 						if (replyPromise != null) {
-							replyPromise.succeed(executionResult);
-							engine.schedule(nextTask);
+							if (nextTask != null)
+								engine.schedule(nextTask, replyPromise);
+							else
+								replyPromise.succeed(executionResult);
 						}
 					}
 					
@@ -107,13 +110,12 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 						if (replyPromise != null) {
 							replyPromise.fail(executionResult);
 						}
-						// TODO-> Does it make sense here to schedule next task?
 					}					
 				};
 			}
 
 			@Override
-			public void postexecution(AsyncPromise<JoinVoid> promise) {
+			public void postexecute(AsyncPromise<JoinVoid> promise) {
 				replyPromise = promise;
 				
 				if (combinedSubTaskPromise.get().isDone()) {

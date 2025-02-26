@@ -13,6 +13,7 @@ import com.wfa.middleware.utils.api.IJoinable;
 public interface IExecutorEngine <T extends IExecutable> {
 	void setMaxParallelism(int parallelism) throws IllegalStateException; // call only when engine is stopped	
 	IJoinable<AsyncPromise<JoinVoid>> schedule(T executable);
+	void schedule(T executable, AsyncPromise<JoinVoid> promise);
 	void startEngine() throws IllegalStateException;
 	void stopEngine() throws IllegalStateException;
 	void pauseEngine() throws IllegalStateException;
