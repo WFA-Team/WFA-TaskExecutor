@@ -56,7 +56,8 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			private int priorityWeight = 0;
 			private AsyncPromise<JoinVoid> replyPromise;
 			private IJoinedJoinable<AsyncPromise<JoinVoid>> combinedSubTaskPromise;
-			private JoinVoid executionResult;
+			
+			// Multi-threading guard
 			private AtomicBoolean concluded = new AtomicBoolean(false);
 			
 			@Override
@@ -97,22 +98,15 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 				return new IAsyncCallback<JoinVoid>() {
 					@Override
 					public void onSuccess(JoinVoid result) {
-						executionResult = result;
-						if (replyPromise != null
-								&& concluded.compareAndSet(false, true)) {
-							if (nextTask != null)
-								engine.schedule(nextTask, replyPromise);
-							else
-								replyPromise.succeed(executionResult);
+						if (replyPromise != null) {
+							performPostExecution();
 						}
 					}
 					
 					@Override
 					public void onFailure(JoinVoid result) {
-						executionResult = result;
-						if (replyPromise != null
-								&& concluded.compareAndSet(false, true)) {
-							replyPromise.fail(executionResult);
+						if (replyPromise != null) {
+							performPostExecution();
 						}
 					}					
 				};
@@ -121,19 +115,22 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			@Override
 			public synchronized void postexecute(AsyncPromise<JoinVoid> promise) {
 				replyPromise = promise;
-				
-				if (combinedSubTaskPromise.get().isDone() 
+				performPostExecution();
+			}
+			
+			private void performPostExecution() {
+				if (combinedSubTaskPromise.get().isConcluded() 
 						&& concluded.compareAndSet(false, true)) {
 					if (combinedSubTaskPromise.get().hasSucceeded()) {
 						if (nextTask != null)
 							engine.schedule(nextTask, replyPromise);
 						else {
-							replyPromise.succeed(executionResult);
+							replyPromise.succeed(combinedSubTaskPromise.get().getResult());
 						}
 					} else {
-						replyPromise.fail(executionResult);
+						replyPromise.fail(combinedSubTaskPromise.get().getResult());
 					}
-				}
+				}				
 			}
 
 			@Override
