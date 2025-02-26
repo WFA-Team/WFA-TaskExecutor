@@ -60,7 +60,7 @@ public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T>
 
 	@Override
 	public IJoinable<AsyncPromise<JoinVoid>> schedule(T executable) {
-		AsyncJoinablePromise<JoinVoid> promise = AsyncJoinablePromise.getNewJoinablePromise();
+		IJoinable<AsyncPromise<JoinVoid>> promise = AsyncJoinablePromise.getNewJoinablePromise();
 		IPrioritizedRunnable runnable = new IPrioritizedRunnable() {
 			private int priorityWeight = 0;
 			
@@ -68,7 +68,7 @@ public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T>
 			public void run() {
 				executable.preexecution();
 				executable.execute();
-				executable.postexecution(promise);
+				executable.postexecution(promise.get());
 			}
 
 			@Override
