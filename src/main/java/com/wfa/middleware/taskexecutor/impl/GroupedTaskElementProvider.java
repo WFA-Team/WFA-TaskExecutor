@@ -91,7 +91,7 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 				combinedSubTaskPromise.get().appendCallback(getCallbackForTaskCompletion());
 			}
 			
-			private IAsyncCallback<JoinVoid> getCallbackForTaskCompletion() {
+			private synchronized IAsyncCallback<JoinVoid> getCallbackForTaskCompletion() {
 				return new IAsyncCallback<JoinVoid>() {
 					@Override
 					public void onSuccess(JoinVoid result) {
@@ -115,7 +115,7 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			}
 
 			@Override
-			public void postexecute(AsyncPromise<JoinVoid> promise) {
+			public synchronized void postexecute(AsyncPromise<JoinVoid> promise) {
 				replyPromise = promise;
 				
 				if (combinedSubTaskPromise.get().isDone()) {
