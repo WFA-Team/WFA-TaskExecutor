@@ -151,8 +151,10 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			}
 		};
 		
-		for (ITaskElement subTask : parallelTasks) {
-			groupedTask.addParallelTask(subTask);
+		if (parallelTasks != null) {
+			for (ITaskElement subTask : parallelTasks) {
+				groupedTask.addParallelTask(subTask);
+			}
 		}
 		
 		return groupedTask;
