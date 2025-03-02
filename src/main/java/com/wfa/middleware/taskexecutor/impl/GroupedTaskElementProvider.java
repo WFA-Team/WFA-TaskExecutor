@@ -81,12 +81,12 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 				while(parallelyExecutableTasks.peek() != null) {
 					ITaskElement<R> subTask = parallelyExecutableTasks.poll();
 					if (firstSubTaskPromise == null) {
-						firstSubTaskPromise = engine.<R>schedule(subTask);
+						firstSubTaskPromise = engine.<R>scheduleJoinable(subTask);
 					} else if (combinedSubTaskPromise == null) {
 						combinedSubTaskPromise = AsyncJoinedJoinablePromise.getNewJoinedJoinablePromise(firstSubTaskPromise, 
-								engine.schedule(subTask));
+								engine.scheduleJoinable(subTask));
 					} else {
-						combinedSubTaskPromise = combinedSubTaskPromise.joinableJoinTo(engine.schedule(subTask));
+						combinedSubTaskPromise = combinedSubTaskPromise.joinableJoinTo(engine.scheduleJoinable(subTask));
 					}
 				}
 				

@@ -58,9 +58,16 @@ public class ExecutorEngine <T extends IExecutable<?>>implements IExecutorEngine
 	}
 
 	@Override
-	public <R extends IJoinable<R>> IJoinable<AsyncPromise<R>> schedule(T executable) {
+	public <R extends IJoinable<R>> IJoinable<AsyncPromise<R>> scheduleJoinable(T executable) {
 		IJoinable<AsyncPromise<R>> promise = AsyncJoinablePromise.getNewJoinablePromise();
 		schedule(executable, promise.get());
+		return promise;
+	}
+	
+	@Override
+	public <R> AsyncPromise<R> schedule(T executable) {
+		AsyncPromise<R> promise = AsyncPromise.getNewPromise();
+		schedule(executable, promise);
 		return promise;
 	}
 	
