@@ -5,7 +5,6 @@ import com.wfa.middleware.taskexecutor.api.IExecutorEngine;
 import com.wfa.middleware.taskexecutor.api.IPrioritizedRunnable;
 import com.wfa.middleware.utils.AsyncJoinablePromise;
 import com.wfa.middleware.utils.AsyncPromise;
-import com.wfa.middleware.utils.JoinVoid;
 import com.wfa.middleware.utils.PlayType;
 import com.wfa.middleware.utils.api.IJoinable;
 import com.wfa.middleware.utils.beans.api.IThreadPool;
@@ -20,7 +19,7 @@ import org.springframework.stereotype.Component;
  * author -> tortoiseDev
  */
 @Component
-public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T> {
+public class ExecutorEngine <T extends IExecutable<?>>implements IExecutorEngine<T> {
 	private static final int DEFAULT_PARALLELISM = 32;
 	private static final int DEFAULT_EXECUTABLE_CAPACITY = 17;
 	private int allowedTotalParallelism;
@@ -59,23 +58,31 @@ public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T>
 	}
 
 	@Override
-	public IJoinable<AsyncPromise<JoinVoid>> schedule(T executable) {
-		IJoinable<AsyncPromise<JoinVoid>> promise = AsyncJoinablePromise.getNewJoinablePromise();
+	public <R extends IJoinable<R>> IJoinable<AsyncPromise<R>> schedule(T executable) {
+		IJoinable<AsyncPromise<R>> promise = AsyncJoinablePromise.getNewJoinablePromise();
 		schedule(executable, promise.get());
 		return promise;
 	}
 	
 	@Override
-	public void schedule(T executable, AsyncPromise<JoinVoid> promise) {
-		// TODO Auto-generated method stub
+	public <R> void schedule(T executable, AsyncPromise<R> promise) {
 		IPrioritizedRunnable runnable = new IPrioritizedRunnable() {
 			private int priorityWeight = 0;
 			
+			@SuppressWarnings("unchecked")
 			@Override
 			public void run() {
 				executable.preexecute();
 				executable.execute();
-				executable.postexecute(promise);
+				
+				try {
+					((IExecutable<R>)executable).postexecute(promise);
+				} catch (ClassCastException e) {
+					System.err.println("Executable generates a result of incompatible type as promise "
+							+ "accepts " + e.getStackTrace().toString());
+					
+					promise.fail(null); // punish user for mistake
+				}
 			}
 
 			@Override
@@ -96,7 +103,7 @@ public class ExecutorEngine <T extends IExecutable>implements IExecutorEngine<T>
 		};
 		
 		runnable.setPriorityWeight(executable.getPriorityWeight());
-		// Configured this runnable translation of the executable
+		// Configure this runnable translation of the executable
 		// in PriorityQueue of ThreadPool
 		this.threadPool.getRunnableQueue().add(runnable);	
 	}

@@ -9,7 +9,7 @@ import com.wfa.middleware.taskexecutor.api.ITaskExecutorEngine;
 import com.wfa.middleware.utils.beans.api.IThreadPoolFactory;
 
 @Component
-public class TaskExecutorEngine extends ExecutorEngine<ITaskElement> implements ITaskExecutorEngine {
+public class TaskExecutorEngine extends ExecutorEngine<ITaskElement<?>> implements ITaskExecutorEngine {
 
 	@Autowired
 	public TaskExecutorEngine(IThreadPoolFactory<IPrioritizedRunnable> threadPoolFactory) {

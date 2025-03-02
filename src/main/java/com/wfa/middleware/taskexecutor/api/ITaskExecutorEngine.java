@@ -6,7 +6,7 @@ package com.wfa.middleware.taskexecutor.api;
  * 
  * author -> tortoiseDev
  */
-public interface ITaskExecutorEngine extends IExecutorEngine<ITaskElement> {
+public interface ITaskExecutorEngine extends IExecutorEngine<ITaskElement<?>> {
 
 }
 

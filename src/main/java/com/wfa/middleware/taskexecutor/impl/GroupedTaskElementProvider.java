@@ -14,7 +14,6 @@ import com.wfa.middleware.taskexecutor.api.ITaskElement;
 import com.wfa.middleware.taskexecutor.api.ITaskExecutorEngine;
 import com.wfa.middleware.utils.AsyncJoinedJoinablePromise;
 import com.wfa.middleware.utils.AsyncPromise;
-import com.wfa.middleware.utils.JoinVoid;
 import com.wfa.middleware.utils.api.IAsyncCallback;
 import com.wfa.middleware.utils.api.IJoinable;
 import com.wfa.middleware.utils.api.IJoinedJoinable;
@@ -30,43 +29,43 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 	}
 	
 	@Override
-	public IGroupedTaskElement getGroupedTaskElement() {
+	public <R extends IJoinable<R>> IGroupedTaskElement<R> getGroupedTaskElement() {
 		return this.getGroupedTaskElement(null);
 	}
 
 	@Override
-	public IGroupedTaskElement getGroupedTaskElement(List<ITaskElement> parallelTasks) {
+	public <R extends IJoinable<R>> IGroupedTaskElement<R> getGroupedTaskElement(List<ITaskElement<R>> parallelTasks) {
 		return this.getGroupedTaskElement(parallelTasks, null);
 	}
 
 	@Override
-	public IGroupedTaskElement getGroupedTaskElement(List<ITaskElement> parallelTasks, ITaskElement nextTask) {
-		IGroupedTaskElement groupedTask =  new IGroupedTaskElement() {
-			private ITaskElement childTask = nextTask;
-			private PriorityBlockingQueue<ITaskElement> parallelyExecutableTasks = new PriorityBlockingQueue<ITaskElement>(
+	public <R extends IJoinable<R>> IGroupedTaskElement<R> getGroupedTaskElement(List<ITaskElement<R>> parallelTasks, ITaskElement<R> nextTask) {
+		IGroupedTaskElement<R> groupedTask =  new IGroupedTaskElement<R>() {
+			private ITaskElement<R> childTask = nextTask;
+			private PriorityBlockingQueue<ITaskElement<R>> parallelyExecutableTasks = new PriorityBlockingQueue<ITaskElement<R>>(
 					parallelTasks != null ? parallelTasks.size() : 0,
-					new Comparator<ITaskElement>() {
+					new Comparator<ITaskElement<?>>() {
 
 						@Override
-						public int compare(ITaskElement e1, ITaskElement e2) {
+						public int compare(ITaskElement<?> e1, ITaskElement<?> e2) {
 							return e1.getPriorityWeight() - e2.getPriorityWeight();
 						}
 				
 			});
 			private int priorityWeight = 0;
-			private AsyncPromise<JoinVoid> replyPromise;
-			private IJoinedJoinable<AsyncPromise<JoinVoid>> combinedSubTaskPromise;
+			private AsyncPromise<R> replyPromise;
+			private IJoinedJoinable<AsyncPromise<R>> combinedSubTaskPromise;
 			
 			// Multi-threading guard
 			private AtomicBoolean concluded = new AtomicBoolean(false);
 			
 			@Override
-			public ITaskElement next() {
+			public ITaskElement<R> next() {
 				return this.childTask;
 			}
 
 			@Override
-			public void setNext(ITaskElement childTask) {
+			public void setNext(ITaskElement<R> childTask) {
 				this.childTask = childTask;
 			}
 
@@ -77,13 +76,13 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 
 			@Override
 			public void execute() {
-				IJoinable<AsyncPromise<JoinVoid>> firstSubTaskPromise = null;
+				IJoinable<AsyncPromise<R>> firstSubTaskPromise = null;
 				
 				while(parallelyExecutableTasks.peek() != null) {
-					ITaskElement subTask = parallelyExecutableTasks.poll();
+					ITaskElement<R> subTask = parallelyExecutableTasks.poll();
 					if (firstSubTaskPromise == null) {
-						firstSubTaskPromise = engine.schedule(subTask);
-					} else if (combinedSubTaskPromise == null){
+						firstSubTaskPromise = engine.<R>schedule(subTask);
+					} else if (combinedSubTaskPromise == null) {
 						combinedSubTaskPromise = AsyncJoinedJoinablePromise.getNewJoinedJoinablePromise(firstSubTaskPromise, 
 								engine.schedule(subTask));
 					} else {
@@ -94,17 +93,17 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 				combinedSubTaskPromise.get().appendCallback(getCallbackForTaskCompletion());
 			}
 			
-			private synchronized IAsyncCallback<JoinVoid> getCallbackForTaskCompletion() {
-				return new IAsyncCallback<JoinVoid>() {
+			private synchronized IAsyncCallback<R> getCallbackForTaskCompletion() {
+				return new IAsyncCallback<R>() {
 					@Override
-					public void onSuccess(JoinVoid result) {
+					public void onSuccess(R result) {
 						if (replyPromise != null) {
 							performPostExecution();
 						}
 					}
 					
 					@Override
-					public void onFailure(JoinVoid result) {
+					public void onFailure(R result) {
 						if (replyPromise != null) {
 							performPostExecution();
 						}
@@ -113,7 +112,7 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			}
 
 			@Override
-			public synchronized void postexecute(AsyncPromise<JoinVoid> promise) {
+			public synchronized void postexecute(AsyncPromise<R> promise) {
 				replyPromise = promise;
 				performPostExecution();
 			}
@@ -144,12 +143,12 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 			}
 
 			@Override
-			public int compareTo(IExecutable other) {
+			public int compareTo(IExecutable<?> other) {
 				return this.getPriorityWeight() - other.getPriorityWeight();
 			}
 
 			@Override
-			public void addParallelTask(ITaskElement subTask) {
+			public void addParallelTask(ITaskElement<R> subTask) {
 				// Make weight relative to the Grouped Task
 				subTask.setPriorityWeight(this.getPriorityWeight() + subTask.getPriorityWeight());
 				this.parallelyExecutableTasks.add(subTask);
@@ -157,7 +156,7 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 		};
 		
 		if (parallelTasks != null) {
-			for (ITaskElement subTask : parallelTasks) {
+			for (ITaskElement<R> subTask : parallelTasks) {
 				groupedTask.addParallelTask(subTask);
 			}
 		}

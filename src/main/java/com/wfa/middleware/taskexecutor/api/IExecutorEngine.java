@@ -1,7 +1,6 @@
 package com.wfa.middleware.taskexecutor.api;
 
 import com.wfa.middleware.utils.AsyncPromise;
-import com.wfa.middleware.utils.JoinVoid;
 import com.wfa.middleware.utils.api.IJoinable;
 
 /**
@@ -10,10 +9,10 @@ import com.wfa.middleware.utils.api.IJoinable;
  * 
  * author -> tortoiseDev
  */
-public interface IExecutorEngine <T extends IExecutable> {
+public interface IExecutorEngine <T extends IExecutable<?>> {
 	void setMaxParallelism(int parallelism) throws IllegalStateException; // call only when engine is stopped	
-	IJoinable<AsyncPromise<JoinVoid>> schedule(T executable);
-	void schedule(T executable, AsyncPromise<JoinVoid> promise);
+	<R extends IJoinable<R>> IJoinable<AsyncPromise<R>> schedule(T executable);
+	<R> void schedule(T executable, AsyncPromise<R> promise);
 	void startEngine() throws IllegalStateException;
 	void stopEngine() throws IllegalStateException;
 	void pauseEngine() throws IllegalStateException;
