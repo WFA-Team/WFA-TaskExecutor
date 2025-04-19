@@ -144,4 +144,9 @@ public class ExecutorEngine <T extends IExecutable<?>>implements IExecutorEngine
 		this.threadPool.pause();
 		engineState = PlayType.PAUSED;
 	}
+
+	@Override
+	public PlayType getState() {
+		return this.engineState;
+	}
 }

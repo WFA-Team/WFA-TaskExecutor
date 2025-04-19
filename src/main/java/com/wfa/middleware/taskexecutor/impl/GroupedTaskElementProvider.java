@@ -121,8 +121,8 @@ public class GroupedTaskElementProvider implements IGroupedTaskElementProvider{
 				if (combinedSubTaskPromise.get().isConcluded() 
 						&& concluded.compareAndSet(false, true)) {
 					if (combinedSubTaskPromise.get().hasSucceeded()) {
-						if (nextTask != null)
-							engine.schedule(nextTask, replyPromise);
+						if (this.childTask != null)
+							engine.schedule(this.childTask, replyPromise);
 						else {
 							replyPromise.succeed(combinedSubTaskPromise.get().getResult());
 						}

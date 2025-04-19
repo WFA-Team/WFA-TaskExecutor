@@ -1,6 +1,7 @@
 package com.wfa.middleware.taskexecutor.api;
 
 import com.wfa.middleware.utils.AsyncPromise;
+import com.wfa.middleware.utils.PlayType;
 import com.wfa.middleware.utils.api.IJoinable;
 
 /**
@@ -17,4 +18,5 @@ public interface IExecutorEngine <T extends IExecutable<?>> {
 	void startEngine() throws IllegalStateException;
 	void stopEngine() throws IllegalStateException;
 	void pauseEngine() throws IllegalStateException;
+	PlayType getState();
 }
