@@ -65,6 +65,17 @@ public class ExecutorEngine <T extends IExecutable<?>>implements IExecutorEngine
 	}
 	
 	@Override
+	public <R> R scheduleOnThisStack(T executable) {
+		AsyncPromise<R> promise = AsyncPromise.getNewPromise();
+		getRunnableFromExecutable(executable, promise).run();
+		
+		// Below while loop so that, we return only when all the sub-executables scheduled by
+		// given executable finish. 
+		while(!promise.isDone()) {/* wait for executable to finish */}
+		return promise.getResult();
+	}
+	
+	@Override
 	public <R> AsyncPromise<R> schedule(T executable) {
 		AsyncPromise<R> promise = AsyncPromise.getNewPromise();
 		schedule(executable, promise);
@@ -73,7 +84,16 @@ public class ExecutorEngine <T extends IExecutable<?>>implements IExecutorEngine
 	
 	@Override
 	public <R> void schedule(T executable, AsyncPromise<R> promise) {
-		IPrioritizedRunnable runnable = new IPrioritizedRunnable() {
+		IPrioritizedRunnable runnable = getRunnableFromExecutable(executable, promise);
+		runnable.setPriorityWeight(executable.getPriorityWeight());
+		
+		// Configure this runnable translation of the executable
+		// in PriorityQueue of ThreadPool
+		this.threadPool.getRunnableQueue().add(runnable);	
+	}
+	
+	private <R> IPrioritizedRunnable getRunnableFromExecutable(T executable, AsyncPromise<R> promise) {
+		return new IPrioritizedRunnable() {
 			private int priorityWeight = 0;
 			
 			@SuppressWarnings("unchecked")
@@ -107,12 +127,7 @@ public class ExecutorEngine <T extends IExecutable<?>>implements IExecutorEngine
 				return priorityWeight;
 			}
 			
-		};
-		
-		runnable.setPriorityWeight(executable.getPriorityWeight());
-		// Configure this runnable translation of the executable
-		// in PriorityQueue of ThreadPool
-		this.threadPool.getRunnableQueue().add(runnable);	
+		};		
 	}
 
 	@Override

@@ -15,6 +15,7 @@ public interface IExecutorEngine <T extends IExecutable<?>> {
 	<R extends IJoinable<R>> IJoinable<AsyncPromise<R>> scheduleJoinable(T executable);
 	<R> AsyncPromise<R> schedule(T executable);
 	<R> void schedule(T executable, AsyncPromise<R> promise);
+	<R> R scheduleOnThisStack(T executable); // schedules this particular executable on current stack
 	void startEngine() throws IllegalStateException;
 	void stopEngine() throws IllegalStateException;
 	void pauseEngine() throws IllegalStateException;
